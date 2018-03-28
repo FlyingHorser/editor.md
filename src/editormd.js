@@ -132,6 +132,8 @@
         onfullscreenExit     : function() {},
         onscroll             : function() {},
         onpreviewscroll      : function() {},
+        onpreMarkdownToHTML  : function(v) {return v;},
+        onendMarkdownToHTML  : function(v) {return v;},
         
         imageUpload          : false,
         imageFormats         : ["jpg", "jpeg", "gif", "png", "bmp", "webp"],
@@ -2001,27 +2003,23 @@
             };
             
             marked.setOptions(markedOptions);
-                    
-            var newMarkdownDoc = editormd.$marked(cmValue, markedOptions);
-            
-            //console.info("cmValue", cmValue, newMarkdownDoc);
-            
-            newMarkdownDoc = editormd.filterHTMLTags(newMarkdownDoc, settings.htmlDecode);
-            
-            //console.error("cmValue", cmValue, newMarkdownDoc);
-            
+                  
+            var newMarkdownDoc=settings.onpreMarkdownToHTML(cmValue);
+            var markdownParsed = editormd.$marked(newMarkdownDoc, markedOptions);
+            markdownParsed = editormd.filterHTMLTags(markdownParsed, settings.htmlDecode);
+            markdownParsed=settings.onendMarkdownToHTML(markdownParsed);
             this.markdownTextarea.text(cmValue);
             
             cm.save();
             
             if (settings.saveHTMLToTextarea) 
             {
-                this.htmlTextarea.text(newMarkdownDoc);
+                this.htmlTextarea.text(markdownParsed);
             }
             
             if(settings.watch || (!settings.watch && state.preview))
             {
-                previewContainer.html(newMarkdownDoc);
+                previewContainer.html(markdownParsed);
 
                 this.previewCodeHighlight();
                 
@@ -3172,18 +3170,16 @@
     
     var isMac = navigator.platform.toUpperCase().indexOf('MAC')>=0;
     var key = isMac ? "Cmd" : "Ctrl";
-    
-    editormd.keyMaps = {
-        [key + "-1"]       : "h1",
-        [key + "-2"]       : "h2",
-        [key + "-3"]       : "h3",
-        [key + "-4"]       : "h4",
-        [key + "-5"]       : "h5",
-        [key + "-6"]       : "h6",
-        [key + "-B"]       : "bold",  // if this is string ==  editormd.toolbarHandlers.xxxx
-        [key + "-D"]       : "datetime",
-        
-        [key + "Ctrl-E"]       : function() { // emoji
+    editormd.keyMaps={},
+    editormd.keyMaps[key + "-1"]="h1",
+    editormd.keyMaps[key + "-2"]="h2",
+    editormd.keyMaps[key + "-3"]="h3",
+    editormd.keyMaps[key + "-4"]="h4",
+    editormd.keyMaps[key + "-5"]="h5",
+    editormd.keyMaps[key + "-6"]="h6",
+    editormd.keyMaps[key + "-B"]="bold",  // if this is string ==  editormd.toolbarHandlers.xxxx
+    editormd.keyMaps[key + "-D"]="datetime",
+    editormd.keyMaps[key + "Ctrl-E"]=function() { // emoji
             var cm        = this.cm;
             var cursor    = cm.getCursor();
             var selection = cm.getSelection();
@@ -3200,12 +3196,11 @@
                 cm.setCursor(cursor.line, cursor.ch + 1);
             }
         },
-        [key + "-Alt-G"]   : "goto-line",
-        [key + "-H"]       : "hr",
-        [key + "-I"]       : "italic",
-        [key + "-K"]       : "code",
-        
-        "Ctrl-L"        : function() {
+    editormd.keyMaps[key + "-Alt-G"]="goto-line",
+    editormd.keyMaps[key + "-H"]="hr",
+    editormd.keyMaps[key + "-I"]="italic",
+    editormd.keyMaps[key + "-K"]="code",
+    editormd.keyMaps[key + "-L"] =function() {
             var cm        = this.cm;
             var cursor    = cm.getCursor();
             var selection = cm.getSelection();
@@ -3218,9 +3213,8 @@
                 cm.setCursor(cursor.line, cursor.ch + 1);
             }
         },
-        [key + "-U"]         : "list-ul",
-        
-        "Shift-Ctrl-A"   : function() {
+    editormd.keyMaps[key + "-U"]  ="list-ul",
+    editormd.keyMaps["Shift-" + key + "-A"]=function() {
             var cm        = this.cm;
             var cursor    = cm.getCursor();
             var selection = cm.getSelection();
@@ -3237,13 +3231,11 @@
                 cm.setCursor(cursor.line, cursor.ch + 1);
             }
         },
-        
-        ["Shift" + key + "-C"]     : "code",
-        ["Shift" + key + "Q"]     : "quote",
-        ["Shift" + key + "S"]     : "del",
-        ["Shift" + key + "K"]     : "tex",  // KaTeX
-        
-        "Shift-Alt-C"      : function() {
+    editormd.keyMaps["Shift-" + key + "-C"]="code",
+    editormd.keyMaps["Shift-" + key + "-Q"]="quote",
+    editormd.keyMaps["Shift-" + key + "-S"]="del",
+    editormd.keyMaps["Shift-" + key + "-K"]="tex",  // KaTeX
+    editormd.keyMaps["Shift-Alt-C"]=function() {
             var cm        = this.cm;
             var cursor    = cm.getCursor();
             var selection = cm.getSelection();
@@ -3254,17 +3246,15 @@
                 cm.setCursor(cursor.line, cursor.ch + 3);
             } 
         },
-        
-        ["Shift-" + key + "-Alt-C"]      : "code-block",
-        ["Shift-" + key + "-H"]          : "html-entities",
-        "Shift-Alt-H"                    : "help",
-        ["Shift-" + key + "-E"]          : "emoji",
-        ["Shift-" + key + "-U"]          : "uppercase",
-        "Shift-Alt-U"                    : "ucwords",
-        ["Shift-" + key + "-Alt-U"]      : "ucfirst",
-        "Shift-Alt-L"                    : "lowercase",
-        
-        ["Shift-" + key + "-I"]          : function() {
+    editormd.keyMaps["Shift-" + key + "-Alt-C"]="code-block",
+    editormd.keyMaps["Shift-" + key + "-H"]="html-entities",
+    editormd.keyMaps["Shift-Alt-H"]="help",
+    editormd.keyMaps["Shift-" + key + "-E"]="emoji",
+    editormd.keyMaps["Shift-" + key + "-U"]="uppercase",
+    editormd.keyMaps["Shift-Alt-U"]="ucwords",
+    editormd.keyMaps["Shift-" + key + "-Alt-U"]="ucfirst",
+    editormd.keyMaps["Shift-Alt-L"]="lowercase",
+    editormd.keyMaps["Shift-" + key + "-I"]=function() {
             var cm        = this.cm;
             var cursor    = cm.getCursor();
             var selection = cm.getSelection();
@@ -3277,17 +3267,16 @@
                 cm.setCursor(cursor.line, cursor.ch + 4);
             }
         },
-        
-        ["Shift-" + key + "-Alt-I"]     : "image",
-        ["Shift-" + key + "-L"]         : "link",
-        ["Shift-" + key + "-O"]         : "list-ol",
-        ["Shift-" + key + "-P"]         : "preformatted-text",
-        ["Shift-" + key + "-T"]         : "table",
-        "Shift-Alt-P"                   : "pagebreak",
-        "F9"                            : "watch",
-        "F10"                           : "preview",
-        "F11"                           : "fullscreen",
-    };
+    editormd.keyMaps["Shift-" + key + "-Alt-I"]="image",
+    editormd.keyMaps["Shift-" + key + "-L"]  ="link",
+    editormd.keyMaps["Shift-" + key + "-O"]  ="list-ol",
+    editormd.keyMaps["Shift-" + key + "-P"]  ="preformatted-text",
+    editormd.keyMaps["Shift-" + key + "-T"]  ="table",
+    editormd.keyMaps["Shift-Alt-P"]="pagebreak",
+    editormd.keyMaps["F9"]="watch",
+    editormd.keyMaps["F10"]="preview",
+    editormd.keyMaps["F11"]="fullscreen";
+    
     
     /**
      * 清除字符串两边的空格
@@ -3355,7 +3344,7 @@
 
     // Emoji graphics files url path
     editormd.emoji     = {
-        path  : "http://www.emoji-cheat-sheet.com/graphics/emojis/",
+        path  : "static/editor.md/images/emoji/",
         ext   : ".png"
     };
 
@@ -3903,7 +3892,9 @@
             emoji                : false,
             flowChart            : false,
             sequenceDiagram      : false,
-            previewCodeHighlight : true
+            previewCodeHighlight : true,
+            onpreMarkdownToHTML  : function(v){return v;},
+            onendMarkdownToHTML  : function(v){return v;}
         };
         
         editormd.$marked  = marked;
@@ -3946,13 +3937,11 @@
             smartLists  : true,
             smartypants : true
         };
-        
-		markdownDoc = new String(markdownDoc);
-        
+        markdownDoc =new String(markdownDoc);
+        markdownDoc = settings.onpreMarkdownToHTML(markdownDoc);
         var markdownParsed = marked(markdownDoc, markedOptions);
-        
         markdownParsed = editormd.filterHTMLTags(markdownParsed, settings.htmlDecode);
-        
+        markdownDoc = settings.onendMarkdownToHTML(markdownParsed);
         if (settings.markdownSourceCode) {
             saveTo.text(markdownDoc);
         } else {
